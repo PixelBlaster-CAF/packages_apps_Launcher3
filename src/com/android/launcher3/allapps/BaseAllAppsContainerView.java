@@ -47,6 +47,8 @@ import androidx.annotation.VisibleForTesting;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.internal.custom.app.ParallelSpaceManager;
+
 import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.DeviceProfile.DeviceProfileListenable;
 import com.android.launcher3.DeviceProfile.OnDeviceProfileChangeListener;
@@ -95,7 +97,7 @@ public abstract class BaseAllAppsContainerView<T extends Context & ActivityConte
     /** Context of an activity or window that is inflating this container. */
     protected final T mActivityContext;
     protected final List<AdapterHolder> mAH;
-    protected final Predicate<ItemInfo> mPersonalMatcher = ItemInfoMatcher.ofUser(
+    protected Predicate<ItemInfo> mPersonalMatcher = ItemInfoMatcher.ofUser(
             Process.myUserHandle());
     private final SearchAdapterProvider<?> mMainAdapterProvider;
     private final AllAppsStore mAllAppsStore = new AllAppsStore();
@@ -149,6 +151,7 @@ public abstract class BaseAllAppsContainerView<T extends Context & ActivityConte
                 mActivityContext.getSystemService(UserManager.class),
                 this,
                 Utilities.getPrefs(mActivityContext), mActivityContext.getDeviceProfile());
+        updateMatcher();
         mAH = Arrays.asList(null, null, null);
         mAH.set(AdapterHolder.MAIN, new AdapterHolder(AdapterHolder.MAIN));
         mAH.set(AdapterHolder.WORK, new AdapterHolder(AdapterHolder.WORK));
@@ -237,7 +240,15 @@ public abstract class BaseAllAppsContainerView<T extends Context & ActivityConte
         mBottomSheetBackground.setVisibility(deviceProfile.isTablet ? View.VISIBLE : View.GONE);
     }
 
+    private void updateMatcher() {
+        mPersonalMatcher = ItemInfoMatcher.ofUser(
+                Process.myUserHandle()).or(ItemInfoMatcher.ofUsers(
+                    ParallelSpaceManager.getInstance().getParallelUserHandles()));
+        mWorkManager.updateMatcher();
+    }
+
     private void onAppsUpdated() {
+        updateMatcher();
         mHasWorkApps = Stream.of(mAllAppsStore.getApps()).anyMatch(mWorkManager.getMatcher());
         if (!isSearching()) {
             rebindAdapters();
