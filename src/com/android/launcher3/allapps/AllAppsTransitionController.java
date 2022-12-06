@@ -28,6 +28,7 @@ import static com.android.launcher3.util.SystemUiController.UI_STATE_ALLAPPS;
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
 import android.animation.ObjectAnimator;
+import android.provider.Settings;
 import android.util.FloatProperty;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -256,8 +257,11 @@ public class AllAppsTransitionController
         builder.add(anim);
 
         setAlphas(toState, config, builder);
+        
+        boolean mFlingVibrate = Settings.System.getInt(mLauncher.getContentResolver(),
+                Settings.System.SCROLL_FLING_HAPTIC_FEEDBACK, 1) != 0;
 
-        if (ALL_APPS.equals(toState) && mLauncher.isInState(NORMAL)) {
+        if (ALL_APPS.equals(toState) && mLauncher.isInState(NORMAL) && !mFlingVibrate) {
             mLauncher.getAppsView().performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY,
                     HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
         }
